@@ -53,5 +53,5 @@
   "title_include": ["python", "developer", "backend", "BE", "engineer"],
   "company_exclude": ["ClickJobs.io"],
   "languages": ["en"],
-  "num_pages": 10
+  "num_pages": 1000
 }

@@ -6,6 +6,6 @@ from linkedin_scraper.spiders.linkedin_spyder import LinkedInScraperSpider # you
 
 process = CrawlerProcess(get_project_settings())
 scheduler = TwistedScheduler()
-scheduler.add_job(process.crawl, 'interval', args=[LinkedInScraperSpider], seconds=5)
+scheduler.add_job(process.crawl, 'interval', args=[LinkedInScraperSpider], seconds=60*60*24)
 scheduler.start()
 process.start(False)
