@@ -6,9 +6,7 @@ from langdetect.lang_detect_exception import LangDetectException
 from ..items import JobItem
 import json
 from urllib.parse import urlparse, urlencode
-from ..utils.logger import debug, info, warn, error
 from ..utils.constants import *
-from pymongo import MongoClient
 from ..settings import *
 import os
 from dotenv import load_dotenv
@@ -20,19 +18,9 @@ class LinkedInScraperSpider(scrapy.Spider):
     name = 'linkedin-scraper'
 
     def __init__(self, *args, **kwargs):
-     self.client = MongoClient(os.getenv('MONGODB_URI'))
-     self.db = self.client["Grab-Data"]
+     self.queries = kwargs.get('queries')
+     self.config = kwargs.get('config')
      self.start = 0 # Start page
-
-    def load_config(self, file_name):
-        # Load the config file
-        with open(file_name) as f:
-            return json.load(f)
-    
-    def load_query(self):
-        query_collection = self.db["search_queries"]
-        queries = query_collection.find()
-        return queries
         
     def build_search_url(self, query):
         if query is None:
@@ -82,13 +70,11 @@ class LinkedInScraperSpider(scrapy.Spider):
 
     
     def start_requests(self):
-        config = self.load_config('config.json')  # Load configuration
-        queries = self.load_query()
-        for query in queries:
+        for query in self.queries:
             self.start = 0
-            for i in range(config['num_pages']):
+            for i in range(self.config['num_pages']):
                 url = self.build_search_url(query)
-                yield scrapy.Request(url, callback=self.parse, headers=config['headers'], meta={'config': config, 'query': query})
+                yield scrapy.Request(url, callback=self.parse, headers=self.config['headers'], meta={'config': self.config, 'query': query})
     
     def parse(self, response):
         config = response.meta['config']
@@ -96,7 +82,6 @@ class LinkedInScraperSpider(scrapy.Spider):
         joblist = []
         # Extracting job cards
         cards = response.css('div.base-search-card__info')
-        print(len(cards))
         for card in cards:
             if card is None:
                 continue

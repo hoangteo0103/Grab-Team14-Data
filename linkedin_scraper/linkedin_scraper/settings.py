@@ -22,7 +22,7 @@ COOKIES_ENABLED = False
 # Override the default request headers:
 DEFAULT_REQUEST_HEADERS = {
     'Accept': 'application/json, text/plain, */*',
-    'User-Agent': 'Your User Agent',
+    'User-Agent': "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36",
 }
 
 # Configure item pipelines

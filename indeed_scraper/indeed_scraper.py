@@ -1,14 +1,12 @@
 from requests_html import HTMLSession
-import csv
 from bs4 import BeautifulSoup
-from constants import *
+from .constants import *
 
 from pymongo import MongoClient
 import os
-import json
 from urllib.parse import urlparse, urlencode
 from dotenv import load_dotenv
-from logger import debug
+from .logger import debug
 
 
 def job_data_get(s, url: str) -> tuple:
@@ -60,16 +58,6 @@ def parse_html(s, job) -> dict:
                 }
     
     return parse_html_job_desc(s, job_dict)
-
-def load_config(file_name):
-    # Load the config file
-    with open(file_name) as f:
-        return json.load(f)
-
-def load_query():
-    query_collection = db["search_queries"]
-    queries = query_collection.find()
-    return queries
     
 def build_search_url(query):
     if query is None:
@@ -78,12 +66,13 @@ def build_search_url(query):
     parsed = urlparse(JOB_BASE_URL)
     params = {}
 
+    params['l'] = "Việt Nam"
+
     if query.get('keywords') is not None:
         params['q'] = query['keywords']
 
     if query.get('location') is not None:
-        params['l'] = query['location']
-
+        params['rbl'] = query['location']
 
     if query.get('time') is not None:
         params['fromage'] = query['time']
@@ -117,8 +106,8 @@ def add_job_to_db(job_dict):
 
 def start_requests():
     s = HTMLSession()
-    queries = load_query()
     for query in queries:
+        global start
         start = 0
         for i in range(config['num_pages']):
             url = build_search_url(query)
@@ -128,22 +117,25 @@ def start_requests():
                 for job in jobs[1]:
                     add_job_to_db(parse_html(s, job))
                 try:
-                    url = baseurl + jobs[0][0].attrs['href']
+                    url = JOB_BASE_URL + jobs[0][0].attrs['href']
                     print(url)
                 except IndexError as err:
                     print(err)
                     break
 
-load_dotenv()
-start = 0 
-client = MongoClient(os.getenv('MONGODB_URI'))
-db = client["Grab-Data"]
-start = 0 # Start page
-job_search = 'python'
-baseurl = JOB_BASE_URL
-config = load_config('config.json')
 
-if __name__ == '__main__':
+
+
+def start_scaper(**kwargs):
+    load_dotenv()
+    global db, config, start, queries
+
+    config = kwargs.get('config')
+    queries = kwargs.get('queries')
+    start = 0 
+    client = MongoClient(os.getenv('MONGODB_URI'))
+    db = client["Grab-Data"]
+    start = 0 # Start page
     
     start_requests()
         

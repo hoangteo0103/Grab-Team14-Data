@@ -25,10 +25,6 @@ class TypeFilters(Enum):
 
 
 class ExperienceLevelFilters(Enum):
-    def __init__(self, value):
-        super().__init__(value)
-    def __str__(self):
-        return self.key
     INTERNSHIP = '1'
     ENTRY_LEVEL = '2'
     ASSOCIATE = '3'

@@ -1,0 +1,53 @@
+{
+  "proxies": {},
+  "headers": {
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "accept-language": "en-US,en;q=0.9",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Edg/124.0.0.0"
+  },
+  "OpenAI_API_KEY": "",
+  "OpenAI_Model": "",
+  "resume_path": "full local path to your resume in PDF format",
+
+  "search_queries": [
+    {
+      "keywords": "",
+      "location": "Ho Chi Minh",
+      "relevance": "urgent"
+    }
+  ],
+  "desc_words": [
+    "agriculture",
+    "farm",
+    "food safety",
+    "manufacture",
+    "manufacturing",
+    "Bilingual",
+    "chemistry",
+    "FDA",
+    "ICH Guideline",
+    "21 CFR 210",
+    "biological sciences",
+    "clinical research",
+    "clinical trials",
+    "drug safety",
+    "ISO 9001",
+    "ISO9001",
+    "Life Sciences",
+    "Biotech",
+    "safety standards",
+    "gt.school",
+    "degree in accounting",
+    "degree in Finance",
+    "ISQM",
+    "ISQM1",
+    "QA/QC",
+    "Electrical Engineering",
+    "IS09001"
+  ],
+  "title_exclude": ["frontend", "fron end", "game"],
+  "title_include": ["python", "developer", "backend", "BE", "engineer"],
+  "company_exclude": ["ClickJobs.io"],
+  "languages": ["en"],
+  "num_pages": 1
+}
