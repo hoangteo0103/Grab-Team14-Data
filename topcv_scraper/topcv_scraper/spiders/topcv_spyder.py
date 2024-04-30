@@ -137,7 +137,6 @@ class TopcvScraperSpider(scrapy.Spider):
             'location': location,
             'job_url': job_url,
             'query': query,
-            'description': description
         }
 
         # Get the job description asynchronously
@@ -149,7 +148,7 @@ class TopcvScraperSpider(scrapy.Spider):
                 div = new_driver.find_element(By.CSS_SELECTOR, 'div.job-detail__box--left')
                 if div:
                     text = div.text.strip().replace('\n\n', '').replace('::marker', '-').replace('-\n', '- ')
-                    job_item['description'] = text
+                    job_item['job_description'] = text
             finally:
                 new_driver.quit()
 
