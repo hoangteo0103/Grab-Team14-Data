@@ -8,6 +8,7 @@
 from itemadapter import ItemAdapter
 import os
 from pymongo import MongoClient
+from .filters.filters import *
 
 
 class TopcvScraperPipeline:
@@ -18,7 +19,12 @@ class TopcvScraperPipeline:
     def process_item(self, item, spider):
         if self.job_collection.find_one({'job_url': item['job_url'], 'company': item['company'], 'title': item['title']}) is not None:
             return item
-        
+        industries = []
+        if 'industry' in item['query']:
+            for code in item['query']['industry']:
+                industry_name = IndustryFilter(code).name
+                if industry_name:
+                    industries.append(industry_name)
         
         self.job_collection.insert_one(
             {
@@ -30,7 +36,7 @@ class TopcvScraperPipeline:
                 'job_description': item['job_description'],
                 'company_link': item['company_link'],
                 'company_location': item['company_location'],
-                'industry': [],
+                'industry': industries,
                 'type': item['query']['type'] if 'type' in item['query'] else None,
                 'experience': item['query']['experience'] if 'experience' in item['query'] else None,
                 'keywords': item['query']['keywords'] if 'keywords' in item['query'] else None,

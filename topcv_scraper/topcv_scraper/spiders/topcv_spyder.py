@@ -7,9 +7,10 @@ from ..items import JobItem
 import json
 from urllib.parse import urlparse, urlencode
 from ..utils.logger import debug, info, warn, error
-from ..utils.constants import *
+from ..filters.filters import *
 from pymongo import MongoClient
 from ..settings import *
+from ..utils.constants import *
 import os
 from dotenv import load_dotenv
 from selenium import webdriver
@@ -52,17 +53,17 @@ class TopcvScraperSpider(scrapy.Spider):
             url += "-" + query['keywords'].replace(' ', '-')
 
         if query.get('location'):
-            url += "-tai-" + query['location'].lower().replace(' ', '-') + "-l" + cities_reverse[query['location']]
+            url += "-tai-" + query['location'].lower().replace(' ', '-') + "-l" + CityFilter.getValueFromKey(query['location'])
 
         if query.get('relevance'):
             params['sort'] = query['relevance']
             debug(f'[{query.get("keywords")}][{query.get("location")}]', 'Applied relevance filter', query['relevance'])
 
         if query.get('type'):
-            url += "/t" + types_reverse[query['type']]
+            url += "/t" + JobTypeFilter.getValueFromKey(query['type'])
 
         if query.get('industry'):
-            params['company_fields'] = industry_reverse[query['industry']]
+            params['company_fields'] = IndustryFilter.getValueFromKey(query['industry'])
             debug(f'[{query.get("keywords")}][{query.get("location")}]', 'Applied industry filters', query['industry'])
 
         params['page'] = str(self.page)

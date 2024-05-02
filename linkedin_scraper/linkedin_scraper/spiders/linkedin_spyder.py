@@ -7,6 +7,7 @@ from ..items import JobItem
 import json
 from urllib.parse import urlparse, urlencode
 from ..utils.constants import *
+from ..utils.logger import debug
 from ..settings import *
 import os
 from dotenv import load_dotenv
@@ -21,6 +22,7 @@ class LinkedInScraperSpider(scrapy.Spider):
      self.queries = kwargs.get('queries')
      self.config = kwargs.get('config')
      self.start = 0 # Start page
+     self.stop = False
         
     def build_search_url(self, query):
         if query is None:
@@ -29,33 +31,33 @@ class LinkedInScraperSpider(scrapy.Spider):
         parsed = urlparse(JOBS_SEARCH_URL)
         params = {}
 
-        if query.get('keywords') is not None:
+        if query.get('keywords') is not None and len(query['keywords']) > 0:
             params['keywords'] = query['keywords']
 
-        if query.get('location') is not None:
+        if query.get('location') is not None and len(query['location']) > 0:
             params['location'] = query['location']
 
 
-        if query.get('time') is not None:
+        if query.get('time') is not None and len(query['time']) > 0:
             params['f_TPR'] = query['time']
             debug(tag, 'Applied time filter', query['time'])
         
-        if query.get('relevance') is not None:
+        if query.get('relevance') is not None and len(query['relevance']) > 0:
             params['sortBy'] = query['relevance']
             debug(tag, 'Applied relevance filter', query['relevance'])
           
-        if query.get('type') is not None:
+        if query.get('type') is not None and len(query['type']) > 0:
             filters = ','.join(e for e in query['type'])
             params['f_JT'] = filters
             debug(tag, 'Applied type filters', query['type'])
         
-        if query.get('experience') is not None:
+        if query.get('experience') is not None and len(query['experience']) > 0:
             filters = ','.join(e for e in query['experience'])
             params['f_E'] = filters
             debug(tag, 'Applied experience filters', query['experience'])
         
 
-        if query.get('industry') is not None:
+        if query.get('industry') is not None and len(query['industry']) > 0:
             filters = ','.join(e for e in query['industry'])
             params['f_I'] = filters
             debug(tag, 'Applied industry filters', query['industry'])
@@ -67,18 +69,27 @@ class LinkedInScraperSpider(scrapy.Spider):
 
         parsed = parsed._replace(query=urlencode(params))
         return parsed.geturl()
-
+    def load_config(self, path):
+        with open(path) as f:
+            return json.load(f)
     
     def start_requests(self):
+        self.config = self.load_config('config.json')
+        self.queries= self.config['search_queries']
         for query in self.queries:
             self.start = 0
             for i in range(self.config['num_pages']):
+                if self.stop:
+                    break
                 url = self.build_search_url(query)
                 yield scrapy.Request(url, callback=self.parse, headers=self.config['headers'], meta={'config': self.config, 'query': query})
     
     def parse(self, response):
         config = response.meta['config']
         query = response.meta['query']
+        if response.status == 400:
+            self.stop = True
+            return
         joblist = []
         # Extracting job cards
         cards = response.css('div.base-search-card__info')

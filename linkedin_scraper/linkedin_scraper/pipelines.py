@@ -8,13 +8,13 @@
 from itemadapter import ItemAdapter
 import os 
 from pymongo import MongoClient
-from .filters import *
+from .filters.filters import *
 
 class LinkedinScraperPipeline:
     def __init__(self):
         client = MongoClient(os.getenv('MONGODB_URI'))
         self.db = client["Grab-Data"]
-        self.job_collection = self.db["jobs"]
+        self.job_collection = self.db["jobs_linkedin"]
     def process_item(self, item, spider):
         if self.job_collection.find_one({'job_url': item['job_url'], 'company': item['company'], 'title': item['title'], 'date': item['date']}) is not None:
             return item

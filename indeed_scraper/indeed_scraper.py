@@ -1,12 +1,12 @@
 from requests_html import HTMLSession
 from bs4 import BeautifulSoup
-from .constants import *
+from constants import *
 
 from pymongo import MongoClient
 import os
 from urllib.parse import urlparse, urlencode
 from dotenv import load_dotenv
-from .logger import debug
+from logger import debug
 
 
 def job_data_get(s, url: str) -> tuple:
@@ -42,11 +42,11 @@ def parse_html_job_desc(s, job_dict) -> dict:
         text = text.replace('\n\n', '')
         text = text.replace('::marker', '-')
         text = text.replace('-\n', '- ')
-        job_dict['description'] = text
+        job_dict['job_description'] = text
 
     return job_dict
 
-def parse_html(s, job) -> dict:
+def parse_html(s, job, query) -> dict:
     soup = BeautifulSoup(job.html, 'html.parser')
 
     companyname = soup.find('span', attrs={'data-testid': 'company-name'})
@@ -55,6 +55,7 @@ def parse_html(s, job) -> dict:
                 'link': 'https://vn.indeed.com/viewjob?jk=' + job.find('h2 > a')[0].attrs['data-jk'] if job.find('h2 > a') else 'no link',
                 'company': companyname.text if companyname else 'no company name',
                 'location': companylocation.text if companylocation else 'no location',
+                'query': query,
                 }
     
     return parse_html_job_desc(s, job_dict)
@@ -62,7 +63,6 @@ def parse_html(s, job) -> dict:
 def build_search_url(query):
     if query is None:
         return JOB_BASE_URL
-    tag = f'[{query.get('keywords')}][{query.get('location')}]'
     parsed = urlparse(JOB_BASE_URL)
     params = {}
 
@@ -76,16 +76,13 @@ def build_search_url(query):
 
     if query.get('time') is not None:
         params['fromage'] = query['time']
-        debug(tag, 'Applied time filter', query['time'])
     
     if query.get('relevance') is not None:
         params['sort'] = query['relevance']
-        debug(tag, 'Applied relevance filter', query['relevance'])
         
     if query.get('type') is not None:
         filters = ','.join(e for e in query['type'])
         params['jt'] = filters
-        debug(tag, 'Applied type filters', query['type'])
     
     global start
     params['start'] = str(start)
@@ -101,12 +98,22 @@ def add_job_to_db(job_dict):
     if job_collection.find_one({'title': job_dict['title'], 'company': job_dict['company'], 'location': job_dict['location']}):
         print('Job already exists')
     else:
-        job_collection.insert_one(job_dict)
+        job_collection.insert_one({
+                'title': job_dict['title'],
+                'company': job_dict['company'],
+                'location': job_dict['location'],
+                'link': job_dict['link'],
+                'job_description': job_dict.get('job_description', ""),
+                'type': job_dict['query'].get('type',""),
+                "time": job_dict['query'].get('time',""),
+                "relevance": job_dict['query'].get('relevance',""),
+                "keywords": job_dict['query'].get('keywords',"") })
 
 
 def start_requests():
     s = HTMLSession()
     for query in queries:
+        print(query)
         global start
         start = 0
         for i in range(config['num_pages']):
@@ -115,7 +122,7 @@ def start_requests():
             while True:
                 jobs = job_data_get(s, url)
                 for job in jobs[1]:
-                    add_job_to_db(parse_html(s, job))
+                    add_job_to_db(parse_html(s, job, query))
                 try:
                     url = JOB_BASE_URL + jobs[0][0].attrs['href']
                     print(url)
@@ -132,6 +139,7 @@ def start_scaper(**kwargs):
 
     config = kwargs.get('config')
     queries = kwargs.get('queries')
+    print(queries)
     start = 0 
     client = MongoClient(os.getenv('MONGODB_URI'))
     db = client["Grab-Data"]

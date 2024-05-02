@@ -16,8 +16,19 @@ CONCURRENT_REQUESTS = 32
 # See also autothrottle settings and docs
 DOWNLOAD_DELAY = 3
 
+AUTOTHROTTLE_ENABLED = True
+# The initial download delay
+AUTOTHROTTLE_START_DELAY = 5
+# The maximum download delay to be set in case of high latencies
+AUTOTHROTTLE_MAX_DELAY = 60
+# The average number of requests Scrapy should be sending in parallel to
+# each remote server
+AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0  
+
 # Disable cookies (enabled by default)
 COOKIES_ENABLED = False
+
+RETRY_HTTP_CODES = [429]
 
 # Override the default request headers:
 DEFAULT_REQUEST_HEADERS = {
@@ -28,5 +39,10 @@ DEFAULT_REQUEST_HEADERS = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'linkedin_scraper.pipelines.LinkedinScraperPipeline': 300,
+    'linkedin_scraper.pipelines.LinkedinScraperPipeline': 150,
+}
+
+DOWNLOADER_MIDDLEWARES = {
+    'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
+    'linkedin_scraper.middlewares.TooManyRequestsRetryMiddleware': 543,
 }
