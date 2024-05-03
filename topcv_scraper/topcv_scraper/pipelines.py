@@ -9,7 +9,7 @@ from itemadapter import ItemAdapter
 import os
 from pymongo import MongoClient
 from .filters.filters import *
-
+import datetime
 
 class TopcvScraperPipeline:
     def __init__(self):
@@ -17,6 +17,14 @@ class TopcvScraperPipeline:
         self.db = client["Grab-Data"]
         self.job_collection = self.db["jobs_topcv"]
     def process_item(self, item, spider):
+        self.query_collection = self.db["search_queries"]
+
+
+        query = self.query_collection.find_one({'_id': item['query']['_id']})
+
+        query['last_crawled_topcv'] = datetime.datetime.now()
+
+        print("QUERY", query)
         if self.job_collection.find_one({'job_url': item['job_url'], 'company': item['company'], 'title': item['title']}) is not None:
             return item
         industries = []

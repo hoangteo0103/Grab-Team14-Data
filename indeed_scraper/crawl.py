@@ -18,7 +18,9 @@ def transform_query(query):
         'location': query.get('location', ''),
         'time': query.get('time', ''),
         'relevance': query.get('relevance', ''),
-        'type': query.get('type', '').lower().replace('_', ' ')
+        'type': query.get('type', '').lower().replace('_', ' '),
+        '_id':  query.get('_id', '')
+
     }
 
     return query_indeed

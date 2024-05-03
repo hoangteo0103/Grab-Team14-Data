@@ -9,31 +9,39 @@ from linkedin_scraper.filters.filters import ExperienceLevelFilters
 from linkedin_scraper.filters.filters import IndustryFilters
 from setup import setup
 from dotenv import load_dotenv
+import datetime
 
 load_dotenv()
 
 db, queries, config = setup()
 
-def transform_query(query):
-    industries = query.get('industry', [])
+def transform_query(queries):
+    queries_linkedin = []
+    for query in queries:
+        if query.get('last_crawled_linkedin', None) is not None and (datetime.datetime.now() - query.get('last_crawled_linkedin')).days < 1:
+            print('Skip crawling linkedin for query:', query.get('_id', ''), 'because it was crawled today')
+            continue
+        industries = query.get('industry', [])
 
-    for industry in industries:
-        if industry not in IndustryFilters.__members__:
-            raise ValueError(f'Invalid industry: {industry}')
-    query_linkedin = {
-        'keywords': query.get('keywords', ''),
-        'location': query.get('location', ''),
-        'time': 'r' + str(int(query.get('time', '0')) / 86400),
-        'relevance': query.get('relevance', [''])[0],
-        'type': query.get('type', [''])[0],
-        'experience': next((key for key in ExperienceLevelFilters.__members__.keys() if key[0] == query.get('experience', [''])[0]), ''),
-        'industry': industries
-    }
+        for industry in industries:
+            if industry not in IndustryFilters.__members__:
+                raise ValueError(f'Invalid industry: {industry}')
+        query_linkedin = {
+            'keywords': query.get('keywords', ''),
+            'location': query.get('location', ''),
+            'time': 'r' + str(int(query.get('time', '0')) / 86400),
+            'relevance': query.get('relevance', [''])[0],
+            'type': query.get('type', [''])[0],
+            'experience': next((key for key in ExperienceLevelFilters.__members__.keys() if key[0] == query.get('experience', [''])[0]), ''),
+            'industry': industries,
+            '_id':  query.get('_id', '')
+        }
+        queries_linkedin.append(query_linkedin)
 
-    return query_linkedin
+    return queries_linkedin
 
 def crawler_linkedin():
-    queries_linkedin= zip(*(transform_query(q) for q in queries))
+    queries_linkedin= transform_query(queries)
     process = CrawlerProcess(get_project_settings())
     scheduler = TwistedScheduler()
     process.crawl(LinkedInScraperSpider, config=config, queries=queries_linkedin)

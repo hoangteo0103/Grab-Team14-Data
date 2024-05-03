@@ -21,7 +21,7 @@ class LinkedInScraperSpider(scrapy.Spider):
     def __init__(self, *args, **kwargs):
      self.queries = kwargs.get('queries')
      self.config = kwargs.get('config')
-     self.start = 0 # Start page
+     self.start = 1275 # Start page
      self.stop = False
         
     def build_search_url(self, query):
@@ -74,8 +74,6 @@ class LinkedInScraperSpider(scrapy.Spider):
             return json.load(f)
     
     def start_requests(self):
-        self.config = self.load_config('config.json')
-        self.queries= self.config['search_queries']
         for query in self.queries:
             self.start = 0
             for i in range(self.config['num_pages']):

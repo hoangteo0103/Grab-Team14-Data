@@ -5,28 +5,37 @@ from topcv_scraper.spiders.topcv_spyder import TopcvScraperSpider
 from scrapy.utils.project import get_project_settings
 from setup import setup
 from dotenv import load_dotenv
+import datetime
 
 load_dotenv()
 
 db, queries, config = setup()
 
-def transform_query(query):
+def transform_query(queries):
     
-    query_topcv = {
-        'keywords': query.get('keywords', ''),
-        'location': query.get('location', ''),
-        'industry': query.get('industry', ''),
-        'relevance': query.get('relevance', ''),
-        'type': query.get('type', ''),
-        'experience': query.get('experience', '')
-    }
+    queries_topcv = []
+    for query in queries:
+        if query.get('last_crawled_topcv', None) is not None and (datetime.datetime.now() - query.get('last_crawled_topcv')).days < 1:
+            print('Skip crawling topcv for query:', query.get('_id', ''), 'because it was crawled today')
+            continue
+        query_topcv = {
+            'keywords': query.get('keywords', ''),
+            'location': query.get('location', ''),
+            'industry': query.get('industry', ''),
+            'relevance': query.get('relevance', ''),
+            'type': query.get('type', ''),
+            'experience': query.get('experience', ''),
+            'id':  query.get('_id', '')
 
-    return query_topcv
+        }
+        queries_topcv.append(query_topcv)
+    return queries_topcv
+
 
 
 def crawler_topcv():
-    queries_topcv = zip(*(transform_query(q) for q in queries))
-    process = CrawlerProcess(settings=get_project_settings())
+    queries_topcv = transform_query(queries)
+    process = CrawlerProcess(get_project_settings())
     scheduler = TwistedScheduler()
     process.crawl(TopcvScraperSpider, kwargs={'config': config, 'queries': queries_topcv})
     scheduler.add_job(process.crawl, 'interval', args=[TopcvScraperSpider], kwargs={'config': config, 'queries': queries_topcv}, seconds=60*60*24)

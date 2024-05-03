@@ -1,4 +1,5 @@
 from requests_html import HTMLSession
+import concurrent.futures
 from bs4 import BeautifulSoup
 from constants import *
 
@@ -68,19 +69,25 @@ def build_search_url(query):
 
     params['l'] = "Việt Nam"
 
-    if query.get('keywords') is not None:
+    if query.get('keywords') is not None and len(query['keywords']) > 0:
         params['q'] = query['keywords']
 
-    if query.get('location') is not None:
+    if query.get('location') is not None and len(query['location']) > 0:
         params['rbl'] = query['location']
+        if params['rbl'] == 'Ho Chi Minh':
+            params['rbl'] = 'Thành Phố Hồ Chí Minh'
+            params['jlid']= 'b388d544e0e095c3'
+        elif params['rbl'] == 'Ha Noi':
+            params['rbl'] = 'Hà Nội'
+            params['jlid']= '3f15a69abf4fcaff'
 
-    if query.get('time') is not None:
+    if query.get('time') is not None and len(query['time']) > 0:
         params['fromage'] = query['time']
     
-    if query.get('relevance') is not None:
+    if query.get('relevance') is not None and len(query['relevance']) > 0:
         params['sort'] = query['relevance']
         
-    if query.get('type') is not None:
+    if query.get('type') is not None and len(query['type']) > 0:
         filters = ','.join(e for e in query['type'])
         params['jt'] = filters
     
@@ -112,23 +119,33 @@ def add_job_to_db(job_dict):
 
 def start_requests():
     s = HTMLSession()
-    for query in queries:
-        print(query)
-        global start
-        start = 0
-        for i in range(config['num_pages']):
-            url = build_search_url(query)
-            print(url)
-            while True:
-                jobs = job_data_get(s, url)
-                for job in jobs[1]:
-                    add_job_to_db(parse_html(s, job, query))
-                try:
-                    url = JOB_BASE_URL + jobs[0][0].attrs['href']
-                    print(url)
-                except IndexError as err:
-                    print(err)
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = []
+        for query in queries:
+            start = 0
+            br = False
+            for i in range(config['num_pages']):
+                if br:
                     break
+                url = build_search_url(query)
+                while True:
+                    jobs = job_data_get(s, url)
+                    if len(jobs[1]) == 0:
+                        br = True
+                        break
+                    for job in jobs[1]:
+                        futures.append(executor.submit(add_job_to_db, parse_html(s, job, query)))
+                    try:
+                        url = JOB_BASE_URL + jobs[0][0].attrs['href']
+                    except IndexError as err:
+                        print(err)
+                        break
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                future.result()
+            except Exception as e:
+                print(f"An error occurred: {e}")
+
 
 
 
@@ -140,10 +157,9 @@ def start_scaper(**kwargs):
     config = kwargs.get('config')
     queries = kwargs.get('queries')
     print(queries)
-    start = 0 
     client = MongoClient(os.getenv('MONGODB_URI'))
     db = client["Grab-Data"]
-    start = 0 # Start page
+    start = 0# Start page
     
     start_requests()
         

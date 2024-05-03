@@ -23,8 +23,9 @@ class TopcvScraperSpider(scrapy.Spider):
     name = 'topcv-scraper'
 
     def __init__(self, *args, **kwargs):
-        self.client = MongoClient(os.getenv('MONGODB_URI'))
-        self.db = self.client["Grab-Data"]
+        self.queries = kwargs.get('queries')
+        self.config = kwargs.get('config')
+
         self.page = 0  # Start page
         # Set up Selenium Chrome driver
         self.options = Options()
@@ -34,14 +35,6 @@ class TopcvScraperSpider(scrapy.Spider):
     def close(self, reason):
         self.driver.quit()
         super().close(reason)
-
-    def load_config(self, file_name):
-        with open(file_name) as f:
-            return json.load(f)
-
-    def load_query(self):
-        query_collection = self.db["search_queries"]
-        return query_collection.find()
 
     def build_search_url(self, query):
         if query is None:
@@ -73,12 +66,11 @@ class TopcvScraperSpider(scrapy.Spider):
         return parsed.geturl()
 
     def start_requests(self):
-        config = self.load_config('config.json')
-        for query in config['search_queries']:
+        for query in self.queries:
             self.page = 0
-            for _ in range(config['num_pages']):
+            for _ in range(self.config['num_pages']):
                 url = self.build_search_url(query)
-                yield scrapy.Request(url, callback=self.parse, headers=config['headers'], meta={'config': config, 'query': query})
+                yield scrapy.Request(url, callback=self.parse, headers=self.config['headers'], meta={'config': self.config, 'query': query})
 
     def parse(self, response):
         config = response.meta['config']
@@ -88,7 +80,7 @@ class TopcvScraperSpider(scrapy.Spider):
         driver.get(response.url)
 
         try:
-            cards = WebDriverWait(driver, 10).until(
+            cards = WebDriverWait(driver, 60).until(
                 EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'div.job-item-search-result.bg-highlight.job-ta'))
             )
             print(f'Found {len(cards)} jobs')
