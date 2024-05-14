@@ -46,16 +46,16 @@ def process_job(job_dict):
                         "type": "string",
                     },
                 },
-                "responsibilities": {
-                    "type": "array",
-                    "description": "A list of position responsibilities",
-                    "items": {
-                        "description": "job responsibility",
-                        "type": "string",
-                    },
-                },
+                # "responsibilities": {
+                #     "type": "array",
+                #     "description": "A list of position responsibilities",
+                #     "items": {
+                #         "description": "job responsibility",
+                #         "type": "string",
+                #     },
+                # },
             },
-            "required": ["industries", "requirements", "responsibilities"],
+            "required": ["industries", "requirements"],
         },
     )
 
@@ -82,12 +82,12 @@ def process_job(job_dict):
                             )
     chat = model.start_chat()
 
-    response = chat.send_message(f"Give me the industries, requirements, responsibilities corresponding with the given JD: ```{job_desc}```")
+    response = chat.send_message(f"Give me the industries, and requirements corresponding with the given JD: ```{job_desc}```")
     fc = response.candidates[0].content.parts[0].function_call
     info_dict = type(fc).to_dict(fc)["args"]
 
     # update job dict
-    job_dict["responsibilities"] = info_dict["responsibilities"]
+    # job_dict["responsibilities"] = info_dict["responsibilities"]
     job_dict["requirements"] = info_dict["requirements"]
     job_dict["industries"] = info_dict["industries"]
 
@@ -127,7 +127,7 @@ def process_cv(cv_url):
                 },
             },
         },
-        "required": ["technical_skills", "soft_skills"],
+        "required": ["technical_skills", "soft_skills", "additional_skills"],
     },
     )
 
@@ -154,7 +154,7 @@ def process_cv(cv_url):
                             )
     chat = model.start_chat()
 
-    keywords_dict = scan_cv.extract_skill_by_cv(cv_url, chat)
+    skills_dict = scan_cv.extract_skill_by_cv(cv_url, chat)
 
-    return keywords_dict
+    return skills_dict
 
