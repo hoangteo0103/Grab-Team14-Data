@@ -23,9 +23,24 @@ class LinkedinScraperPipeline:
 
         query['last_crawled_linkedin'] = datetime.datetime.now()
 
-        print("QUERY", query)
-        self.query_collection.update_one({'_id': item['query']['_id']}, {'$set': query})
+        # self.query_collection.update_one({'_id': item['query']['_id']}, {'$set': query})
         if self.job_collection.find_one({'job_url': item['job_url'], 'company': item['company'], 'title': item['title'], 'date': item['date']}) is not None:
+            job = self.job_collection.find_one({'job_url': item['job_url'], 'company': item['company'], 'title': item['title'], 'date': item['date']})
+            if 'industry' in item['query']:
+                for code in item['query']['industry']:
+                    if code not in job['industry']:
+                        job['industry'].append(code)
+            
+            if 'type' not in job and 'type' in item['query']:
+                job['type'] = item['query']['type']
+
+            if 'experience' not in job and 'experience' in item['query']:
+                job['experience'] = item['query']['experience']
+
+            if 'working_type' not in job and 'working_type' in item:
+                job['working_type'] = item['working_type']
+
+            self.job_collection.update_one({'job_url': item['job_url'], 'company': item['company'], 'title': item['title'], 'date': item['date']}, {'$set': job})
             return item
         industries = []
         if 'industry' in item['query']:
@@ -48,6 +63,8 @@ class LinkedinScraperPipeline:
                 'experience': item['query']['experience'] if 'experience' in item['query'] else None,
                 'keywords': item['query']['keywords'] if 'keywords' in item['query'] else None,
                 'time': item['query']['time'] if 'time' in item['query'] else None,
+                'company_image_url': item['company_image_url'],
+                'working_type': item['working_type'],
             }
         )
         return item

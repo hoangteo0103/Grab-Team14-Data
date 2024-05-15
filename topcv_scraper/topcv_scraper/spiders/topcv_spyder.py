@@ -47,7 +47,6 @@ class TopcvScraperSpider(scrapy.Spider):
 
         if query.get('location'):
             url += "-tai-" + query['location'].lower().replace(' ', '-') + "-l" + CityFilter.getValueFromKey(query['location'])
-
         if query.get('relevance'):
             params['sort'] = query['relevance']
             debug(f'[{query.get("keywords")}][{query.get("location")}]', 'Applied relevance filter', query['relevance'])
@@ -56,7 +55,7 @@ class TopcvScraperSpider(scrapy.Spider):
             url += "/t" + JobTypeFilter.getValueFromKey(query['type'])
 
         if query.get('industry'):
-            params['company_fields'] = IndustryFilter.getValueFromKey(query['industry'])
+            params['company_fields'] = IndustryFilter.getValueFromKey(query['industry'][0])
             debug(f'[{query.get("keywords")}][{query.get("location")}]', 'Applied industry filters', query['industry'])
 
         params['page'] = str(self.page)
@@ -67,14 +66,23 @@ class TopcvScraperSpider(scrapy.Spider):
 
     def start_requests(self):
         for query in self.queries:
+            industries = query.get('industry', [])
+
+            query_industries = IndustryFilter.getValueFromKey(industries[0]) if industries else None
+            query_industries = query_industries.split('.') if query_industries else None
             self.page = 0
-            for _ in range(self.config['num_pages']):
-                url = self.build_search_url(query)
-                yield scrapy.Request(url, callback=self.parse, headers=self.config['headers'], meta={'config': self.config, 'query': query})
+            for industry in query_industries:
+                for _ in range(self.config['num_pages']):
+                    new_query = query.copy()
+
+                    new_query['industry'] = industry
+                    url = self.build_search_url(query)
+                    yield scrapy.Request(url, callback=self.parse, headers=self.config['headers'], meta={'config': self.config, 'query': new_query, 'orginal_query': query})
 
     def parse(self, response):
         config = response.meta['config']
         query = response.meta['query']
+        original_query = response.meta['orginal_query']
 
         driver = self.driver
         driver.get(response.url)
@@ -86,7 +94,7 @@ class TopcvScraperSpider(scrapy.Spider):
             print(f'Found {len(cards)} jobs')
             for card in cards:
                 try:
-                    job_item = self.extract_job_details(card, query)
+                    job_item = self.extract_job_details(card, query, original_query)
                     print(job_item)
                     yield job_item
                 except Exception as e:
@@ -95,7 +103,7 @@ class TopcvScraperSpider(scrapy.Spider):
             # No need to quit the driver here, it will be handled by the spider closing process
             pass
 
-    def extract_job_details(self, card, query):
+    def extract_job_details(self, card, query, original_query):
         title, company, company_link, company_location, location, job_url = "Not Available", "Not Available", "Not Available", "Not Available", "Not Available", "Not Available"
         description = ""
 
@@ -130,6 +138,7 @@ class TopcvScraperSpider(scrapy.Spider):
             'location': location,
             'job_url': job_url,
             'query': query,
+            'original_query': original_query
         }
 
         # Get the job description asynchronously

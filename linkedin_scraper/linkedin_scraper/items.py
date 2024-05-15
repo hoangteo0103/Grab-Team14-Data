@@ -9,4 +9,6 @@ class JobItem(scrapy.Item):
     job_description = scrapy.Field()
     company_link = scrapy.Field()
     company_location = scrapy.Field()
+    company_image_url = scrapy.Field()
+    working_type = scrapy.Field()
     query = scrapy.Field()

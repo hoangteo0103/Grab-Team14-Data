@@ -17,3 +17,4 @@ class JobItem(scrapy.Item):
     company_link = scrapy.Field()
     company_location = scrapy.Field()
     query = scrapy.Field()
+    original_query = scrapy.Field()

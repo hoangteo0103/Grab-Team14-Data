@@ -7,14 +7,16 @@ NEWSPIDER_MODULE = 'linkedin_scraper.spiders'
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = False
+SPLASH_URL = 'http://localhost:8060'
+
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-CONCURRENT_REQUESTS = 100
+CONCURRENT_REQUESTS = 32
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 1
+DOWNLOAD_DELAY = 10
 
 AUTOTHROTTLE_ENABLED = True
 # The initial download delay
@@ -44,5 +46,12 @@ ITEM_PIPELINES = {
 
 DOWNLOADER_MIDDLEWARES = {
     'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
+    'scrapy_splash.SplashCookiesMiddleware': 723,
+    'scrapy_splash.SplashMiddleware': 725,
+    'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 810,
     'linkedin_scraper.middlewares.TooManyRequestsRetryMiddleware': 543,
+}
+
+SPIDER_MIDDLEWARES = {
+    'scrapy_splash.SplashDeduplicateArgsMiddleware': 100,
 }

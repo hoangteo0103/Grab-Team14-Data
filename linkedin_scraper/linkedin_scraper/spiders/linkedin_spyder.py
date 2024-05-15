@@ -10,19 +10,53 @@ from ..utils.constants import *
 from ..utils.logger import debug
 from ..settings import *
 import os
+from bs4 import BeautifulSoup
+
 from dotenv import load_dotenv
+from scrapy_splash import SplashRequest
+
 
 load_dotenv()
+
+load_page_script="""
+        function main(splash)
+            splash:set_user_agent(splash.args.ua)
+            assert(splash:go(splash.args.url))
+            splash:wait(5) -- Wait for 5 seconds
+
+            repeat
+                splash:wait(0.5)
+            until splash:select('div.ivm-image-view-model') ~= nil 
+
+            return {html=splash:html()}
+        end
+"""
 
 
 class LinkedInScraperSpider(scrapy.Spider):
     name = 'linkedin-scraper'
+    custom_settings = {
+    'SPLASH_URL': 'http://localhost:8060',
+    # if installed Docker Toolbox: 
+    #  'SPLASH_URL': 'http://192.168.99.100:8050',
+    'DOWNLOADER_MIDDLEWARES': {
+        'scrapy_splash.SplashCookiesMiddleware': 723,
+        'scrapy_splash.SplashMiddleware': 725,
+        'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 810,
+        'linkedin_scraper.middlewares.TooManyRequestsRetryMiddleware': 543,
+    },
+    'SPIDER_MIDDLEWARES': {
+        'scrapy_splash.SplashDeduplicateArgsMiddleware': 100,
+    },
+    'DUPEFILTER_CLASS': 'scrapy_splash.SplashAwareDupeFilter',
+    }
 
     def __init__(self, *args, **kwargs):
      self.queries = kwargs.get('queries')
      self.config = kwargs.get('config')
-     self.start = 1275 # Start page
+     self.start = 0 # Start page
      self.stop = False
+     
         
     def build_search_url(self, query):
         if query is None:
@@ -80,11 +114,13 @@ class LinkedInScraperSpider(scrapy.Spider):
                 if self.stop:
                     break
                 url = self.build_search_url(query)
-                yield scrapy.Request(url, callback=self.parse, headers=self.config['headers'], meta={'config': self.config, 'query': query})
+                yield SplashRequest(url, self.parse, meta={'config': self.config, 'query': query},args={'wait': 0.5})
     
     def parse(self, response):
         config = response.meta['config']
         query = response.meta['query']
+
+
         if response.status == 400:
             self.stop = True
             return
@@ -105,6 +141,9 @@ class LinkedInScraperSpider(scrapy.Spider):
             job_url = f'https://www.linkedin.com/jobs/view/{job_posting_id}/'
             date_tag = card.css('time.job-search-card__listdate').attrib.get('datetime', '')
             date_tag_new = card.css('time.job-search-card__listdate--new').attrib.get('datetime', '')
+
+            
+
             date = date_tag if date_tag else date_tag_new
 
             # Create a job item without description
@@ -119,14 +158,28 @@ class LinkedInScraperSpider(scrapy.Spider):
                 'query': query,
             }
 
-            # Get the job description asynchronously
-            yield response.follow(job_url, callback=self.parse_job_description,  headers=config['headers'], meta={'job_item': job_item, 'config': config})
+
+            splash_args = {
+            'render_all': 1,
+            'ua': "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36",
+            'lua_source': load_page_script
+            }
+            yield SplashRequest(job_url, self.parse_job_description,endpoint='execute', magic_response=True, headers=config['headers'], meta={'job_item': job_item, 'config': config},args=splash_args)
 
     def parse_job_description(self, response):
         config = response.meta['config']
         job_item = response.meta['job_item']
+
         description_div = response.css('div.description__text.description__text--rich')
-        job_insight = response.css('span.job-details-jobs-unified-top-card__job-insight-view-model-secondary::text').get(default='not-found').strip()   
+        company_image_url = response.css("div.details.mx-details-container-padding > div.sub-nav-cta__content > img").attrib.get('src', '')
+        working_type = response.css("span.ui-label.ui-label--accent-3.text-body-small > span").get(default='not-found').strip()
+
+
+        print("company_image_url", company_image_url)
+        job_item['company_image_url'] = company_image_url
+        job_item['working_type'] = working_type
+        with open('response.html', 'w', encoding='utf-8') as f:
+            f.write(response.text)
         if description_div:
             # Remove unwanted elements
             for element in description_div.css('span, a'):
@@ -140,7 +193,6 @@ class LinkedInScraperSpider(scrapy.Spider):
             job_description = job_description.replace('Show less', '').replace('Show more', '')
         else:
             job_description = "Could not find Job Description"
-        job_item['job_insight'] = job_insight
         job_item['job_description'] = job_description
         yield job_item
 

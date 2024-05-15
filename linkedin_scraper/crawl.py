@@ -26,16 +26,33 @@ def transform_query(queries):
         for industry in industries:
             if industry not in IndustryFilters.__members__:
                 raise ValueError(f'Invalid industry: {industry}')
-        query_linkedin = {
-            'keywords': query.get('keywords', ''),
-            'location': query.get('location', ''),
-            'time': 'r' + str(int(query.get('time', '0')) / 86400),
-            'relevance': query.get('relevance', [''])[0],
-            'type': query.get('type', [''])[0],
-            'experience': next((key for key in ExperienceLevelFilters.__members__.keys() if key[0] == query.get('experience', [''])[0]), ''),
-            'industry': industries,
-            '_id':  query.get('_id', '')
-        }
+            
+        query_linkedin = {}
+
+
+        if 'keywords' in query:
+            query_linkedin['keywords'] = query['keywords']
+        if 'location' in query:
+            query_linkedin['location'] = query['location']
+        
+        if 'time' in query:
+            query_linkedin['time'] = 'r' + str(int(query['time']) / 86400)
+        
+        if 'relevance' in query:
+            query_linkedin['relevance'] = query['relevance']
+
+        if 'type' in query:
+            query_linkedin['type'] = query['type']
+
+        if 'experience' in query:
+            query_linkedin['experience'] = next((key for key in ExperienceLevelFilters.__members__.keys() if key[0] == query['experience']), '')
+
+        if 'industry' in query:
+            query_linkedin['industry'] = []
+            for industry in query['industry']:
+                query_linkedin['industry'].append(IndustryFilters.getValueFromKey(industry))
+
+        query_linkedin['_id'] = query.get('_id', '')
         queries_linkedin.append(query_linkedin)
 
     return queries_linkedin
