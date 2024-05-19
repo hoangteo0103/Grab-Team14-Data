@@ -104,7 +104,7 @@ class TopcvScraperSpider(scrapy.Spider):
             pass
 
     def extract_job_details(self, card, query, original_query):
-        title, company, company_link, company_location, location, job_url = "Not Available", "Not Available", "Not Available", "Not Available", "Not Available", "Not Available"
+        title, company, companyLink, companyLocation, location, jobLink = "Not Available", "Not Available", "Not Available", "Not Available", "Not Available", "Not Available"
         description = ""
 
         title_element = self.find_element(card, 'h3.title > a > span')
@@ -114,43 +114,43 @@ class TopcvScraperSpider(scrapy.Spider):
         company_element = self.find_element(card, 'a.company')
         if company_element:
             company = company_element.text.strip()
-            company_link = company_element.get_attribute('href')
+            companyLink = company_element.get_attribute('href')
 
         location_element = self.find_element(card, 'div.info > div.label-content > label.address')
         if location_element:
             html_string = location_element.get_attribute("data-original-title")
             soup = BeautifulSoup(html_string, 'html.parser')
-            company_location_element = soup.find('p')
-            if company_location_element:
-                company_location = company_location_element.text.strip()
+            companyLocation_element = soup.find('p')
+            if companyLocation_element:
+                companyLocation = companyLocation_element.text.strip()
             location = location_element.text.strip()
 
-        job_url_element = self.find_element(card, 'div.title-block > div > h3.title > a')
-        if job_url_element:
-            job_url = job_url_element.get_attribute('href')
+        jobLink_element = self.find_element(card, 'div.title-block > div > h3.title > a')
+        if jobLink_element:
+            jobLink = jobLink_element.get_attribute('href')
 
         # Create job item
         job_item = {
             'title': title,
             'company': company,
-            'company_link': company_link,
-            'company_location': company_location,
+            'companyLink': companyLink,
+            'companyLocation': companyLocation,
             'location': location,
-            'job_url': job_url,
+            'jobLink': jobLink,
             'query': query,
             'original_query': original_query
         }
 
         # Get the job description asynchronously
-        if job_url:
+        if jobLink:
             try:
                 new_driver = webdriver.Chrome(options=self.options)
-                new_driver.get(job_url)
+                new_driver.get(jobLink)
                 new_driver.implicitly_wait(1.4)
                 div = new_driver.find_element(By.CSS_SELECTOR, 'div.job-detail__box--left')
                 if div:
                     text = div.text.strip().replace('\n\n', '').replace('::marker', '-').replace('-\n', '- ')
-                    job_item['job_description'] = text
+                    job_item['description'] = text
             finally:
                 new_driver.quit()
 

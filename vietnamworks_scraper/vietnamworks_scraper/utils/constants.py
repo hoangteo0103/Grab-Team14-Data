@@ -1,0 +1,1 @@
+JOBS_SEARCH_URL = 'https://ms.vietnamworks.com/job-search/v1.0/search'

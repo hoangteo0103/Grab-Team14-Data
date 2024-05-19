@@ -25,8 +25,8 @@ class TopcvScraperPipeline:
         query['last_crawl_topcv'] = datetime.datetime.now()
 
         self.query_collection.update_one({'_id': item['query']['_id']}, {'$set': query})
-        if self.job_collection.find_one({'job_url': item['job_url'], 'company': item['company'], 'title': item['title'], 'date': item['date']}) is not None:
-            job = self.job_collection.find_one({'job_url': item['job_url'], 'company': item['company'], 'title': item['title'], 'date': item['date']})
+        if self.job_collection.find_one({'jobLink': item['jobLink'], 'company': item['company'], 'title': item['title'], 'date': item['date']}) is not None:
+            job = self.job_collection.find_one({'jobLink': item['jobLink'], 'company': item['company'], 'title': item['title'], 'date': item['date']})
             if 'industry' in item['query']:
                 for code in item['query']['industry']:
                     if code not in job['industry']:
@@ -38,10 +38,10 @@ class TopcvScraperPipeline:
             if 'experience' not in job and 'experience' in item['query']:
                 job['experience'] = item['query']['experience']
 
-            if 'working_type' not in job and 'working_type' in item:
-                job['working_type'] = item['working_type']
+            if 'workingMode' not in job and 'workingMode' in item:
+                job['workingMode'] = item['workingMode']
 
-            self.job_collection.update_one({'job_url': item['job_url'], 'company': item['company'], 'title': item['title'], 'date': item['date']}, {'$set': job})
+            self.job_collection.update_one({'jobLink': item['jobLink'], 'company': item['company'], 'title': item['title'], 'date': item['date']}, {'$set': job})
             return item
         industries = []
         if 'industry' in item['original_query']:
@@ -54,10 +54,10 @@ class TopcvScraperPipeline:
                 'company': item['company'],
                 'location': item['location'],
                 'date': item['date'] if 'date' in item else None,
-                'job_url': item['job_url'],
-                'job_description': item['job_description'],
-                'company_link': item['company_link'],
-                'company_location': item['company_location'],
+                'jobLink': item['jobLink'],
+                'description': item['description'],
+                'companyLink': item['companyLink'],
+                'companyLocation': item['companyLocation'],
                 'industry': industries,
                 'type': item['query']['type'] if 'type' in item['query'] else None,
                 'experience': item['query']['experience'] if 'experience' in item['query'] else None,

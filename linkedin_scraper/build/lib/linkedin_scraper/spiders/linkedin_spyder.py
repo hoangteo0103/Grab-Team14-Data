@@ -103,12 +103,12 @@ class LinkedInScraperSpider(scrapy.Spider):
             # Extracting job details using Scrapy selectors
             title = card.css('h3::text').get(default='not-found').strip()
             company = card.css('a.hidden-nested-link::text').get(default='not-found').strip()
-            company_link = card.css('h4 a::attr(href)').get(default='not-found')
-            company_location = card.css('.job-search-card__location::text').get(default='not-found').strip()
+            companyLink = card.css('h4 a::attr(href)').get(default='not-found')
+            companyLocation = card.css('.job-search-card__location::text').get(default='not-found').strip()
             location = card.css('span.job-search-card__location::text').get(default='not-found').strip()
             entity_urn = card.xpath('../@data-entity-urn').get(default='not-found')
             job_posting_id = entity_urn.split(':')[-1]
-            job_url = f'https://www.linkedin.com/jobs/view/{job_posting_id}/'
+            jobLink = f'https://www.linkedin.com/jobs/view/{job_posting_id}/'
             date_tag = card.css('time.job-search-card__listdate').attrib.get('datetime', '')
             date_tag_new = card.css('time.job-search-card__listdate--new').attrib.get('datetime', '')
             date = date_tag if date_tag else date_tag_new
@@ -117,18 +117,18 @@ class LinkedInScraperSpider(scrapy.Spider):
             job_item = {
                 'title': title,
                 'company': company,
-                'company_link': company_link,
-                'company_location': company_location,
+                'companyLink': companyLink,
+                'companyLocation': companyLocation,
                 'location': location,
                 'date': date,
-                'job_url': job_url,
+                'jobLink': jobLink,
                 'query': query,
             }
 
             # Get the job description asynchronously
-            yield response.follow(job_url, callback=self.parse_job_description,  headers=config['headers'], meta={'job_item': job_item, 'config': config})
+            yield response.follow(jobLink, callback=self.parse_description,  headers=config['headers'], meta={'job_item': job_item, 'config': config})
 
-    def parse_job_description(self, response):
+    def parse_description(self, response):
         config = response.meta['config']
         job_item = response.meta['job_item']
         description_div = response.css('div.description__text.description__text--rich')
@@ -139,22 +139,22 @@ class LinkedInScraperSpider(scrapy.Spider):
                 element.extract()
 
             # Get the cleaned text
-            job_description = '\n'.join(description_div.xpath('.//text()').extract()).strip()
-            job_description = job_description.replace('\n\n', '')
-            job_description = job_description.replace('::marker', '-')
-            job_description = job_description.replace('-\n', '- ')
-            job_description = job_description.replace('Show less', '').replace('Show more', '')
+            description = '\n'.join(description_div.xpath('.//text()').extract()).strip()
+            description = description.replace('\n\n', '')
+            description = description.replace('::marker', '-')
+            description = description.replace('-\n', '- ')
+            description = description.replace('Show less', '').replace('Show more', '')
         else:
-            job_description = "Could not find Job Description"
+            description = "Could not find Job Description"
         job_item['job_insight'] = job_insight
-        job_item['job_description'] = job_description
+        job_item['description'] = description
         yield job_item
 
     def remove_irrelevant_jobs(self, joblist, config):
-        new_joblist = [job for job in joblist if not any(word.lower() in job['job_description'].lower() for word in config['desc_words'])]   
+        new_joblist = [job for job in joblist if not any(word.lower() in job['description'].lower() for word in config['desc_words'])]   
         new_joblist = [job for job in new_joblist if not any(word.lower() in job['title'].lower() for word in config['title_exclude'])] if len(config['title_exclude']) > 0 else new_joblist
         new_joblist = [job for job in new_joblist if any(word.lower() in job['title'].lower() for word in config['title_include'])] if len(config['title_include']) > 0 else new_joblist
-        new_joblist = [job for job in new_joblist if self.safe_detect(job['job_description']) in config['languages']] if len(config['languages']) > 0 else new_joblist
+        new_joblist = [job for job in new_joblist if self.safe_detect(job['description']) in config['languages']] if len(config['languages']) > 0 else new_joblist
         new_joblist = [job for job in new_joblist if not any(word.lower() in job['company'].lower() for word in config['company_exclude'])] if len(config['company_exclude']) > 0 else new_joblist
         return new_joblist
 

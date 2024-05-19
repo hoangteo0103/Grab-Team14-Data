@@ -6,7 +6,17 @@
 import scrapy
 
 
-class VietnamworksScraperItem(scrapy.Item):
+class JobItem(scrapy.Item):
     # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+    title = scrapy.Field()
+    company = scrapy.Field()
+    location = scrapy.Field()
+    date = scrapy.Field()
+    jobLink = scrapy.Field()
+    description = scrapy.Field()
+    companyLink = scrapy.Field()
+    companyLocation = scrapy.Field()
+    companyImageUrl = scrapy.Field()
+    type = scrapy.Field()
+    experience = scrapy.Field()
+    requirements = scrapy.Field()

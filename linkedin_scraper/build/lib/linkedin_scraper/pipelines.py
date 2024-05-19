@@ -16,7 +16,7 @@ class LinkedinScraperPipeline:
         self.db = client["Grab-Data"]
         self.job_collection = self.db["jobs"]
     def process_item(self, item, spider):
-        if self.job_collection.find_one({'job_url': item['job_url'], 'company': item['company'], 'title': item['title'], 'date': item['date']}) is not None:
+        if self.job_collection.find_one({'jobLink': item['jobLink'], 'company': item['company'], 'title': item['title'], 'date': item['date']}) is not None:
             return item
         
         industries = []
@@ -33,10 +33,10 @@ class LinkedinScraperPipeline:
                 'company': item['company'],
                 'location': item['location'],
                 'date': item['date'],
-                'job_url': item['job_url'],
-                'job_description': item['job_description'],
-                'company_link': item['company_link'],
-                'company_location': item['company_location'],
+                'jobLink': item['jobLink'],
+                'description': item['description'],
+                'companyLink': item['companyLink'],
+                'companyLocation': item['companyLocation'],
                 'industry': industries,
                 'type': item['query']['type'] if 'type' in item['query'] else None,
                 'experience': item['query']['experience'] if 'experience' in item['query'] else None,

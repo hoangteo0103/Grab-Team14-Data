@@ -15,14 +15,15 @@ from vertexai.preview.generative_models import ToolConfig
 import scan_cv
 
 
-load_dotenv()
 vertexai.init(project=os.getenv('PROJECT_ID'), location=os.getenv('LOCATION'))
 
 
 
 
 def process_job(job_dict):
-    job_desc = job_dict.get('job_description', "")
+    load_dotenv()
+    vertexai.init(project=os.getenv('PROJECT_ID'), location=os.getenv('LOCATION'))
+    job_desc = job_dict.get('description', "")
 
     extract_job_keywords_func = FunctionDeclaration(
         name="extract_job_keywords",

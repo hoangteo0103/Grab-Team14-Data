@@ -8,6 +8,7 @@ import os
 from urllib.parse import urlparse, urlencode
 from dotenv import load_dotenv
 from logger import debug
+from ..preprocess_data import updatedb_gemini
 
 
 def job_data_get(s, url: str) -> tuple:
@@ -16,7 +17,7 @@ def job_data_get(s, url: str) -> tuple:
     return r.html.find('ul.pagination-list a[aria-label=Next]'), r.html.find('div.job_seen_beacon')
 
 def parse_html_job_desc(s, job_dict) -> dict:
-    job_desc_req = s.get(job_dict['link'])
+    job_desc_req = s.get(job_dict['jobLink'])
     job_desc_soup = BeautifulSoup(job_desc_req.text, 'html.parser')
     with open('job_desc.html', 'w', encoding='utf-8') as f:
         f.write(job_desc_soup.prettify())
@@ -43,8 +44,20 @@ def parse_html_job_desc(s, job_dict) -> dict:
         text = text.replace('\n\n', '')
         text = text.replace('::marker', '-')
         text = text.replace('-\n', '- ')
-        job_dict['job_description'] = text
+        job_dict['description'] = text
 
+
+    img = job_desc_soup.find('img', class_='jobsearch-JobInfoHeader-logo')
+    if img:
+        job_dict['companyImageUrl'] = img.attrs['src']
+    else:
+        job_dict['companyImageUrl'] = 'https://logos-world.net/wp-content/uploads/2021/02/Indeed-Symbol.png'
+
+    div = job_desc_soup.find('div', class_='jobsearch-JobInfoHeader-title-container')
+
+    if div:
+        cmp_link = div.find('a')
+        job_dict['companyLink'] = cmp_link.attrs['href'] if cmp_link else ''
     return job_dict
 
 def parse_html(s, job, query) -> dict:
@@ -53,7 +66,7 @@ def parse_html(s, job, query) -> dict:
     companyname = soup.find('span', attrs={'data-testid': 'company-name'})
     companylocation = soup.find('div', attrs={'data-testid': 'text-location'})
     job_dict = {'title': job.find('h2 > a')[0].text,
-                'link': 'https://vn.indeed.com/viewjob?jk=' + job.find('h2 > a')[0].attrs['data-jk'] if job.find('h2 > a') else 'no link',
+                'jobLink': 'https://vn.indeed.com/viewjob?jk=' + job.find('h2 > a')[0].attrs['data-jk'] if job.find('h2 > a') else 'no link',
                 'company': companyname.text if companyname else 'no company name',
                 'location': companylocation.text if companylocation else 'no location',
                 'query': query,
@@ -82,7 +95,12 @@ def build_search_url(query):
             params['jlid']= '3f15a69abf4fcaff'
 
     if query.get('time') is not None and len(query['time']) > 0:
-        params['fromage'] = query['time']
+        if query.get('time') == 'DAY':
+            params['fromage'] = '1'
+        if query.get('time') == 'WEEK':
+            params['fromage'] = '7'
+        if query.get('time') == 'MONTH':
+            params['fromage'] = '30'
     
     if query.get('relevance') is not None and len(query['relevance']) > 0:
         params['sort'] = query['relevance']
@@ -100,21 +118,47 @@ def build_search_url(query):
     return parsed.geturl()    
 
 def add_job_to_db(job_dict):
-    print(job_dict)
     job_collection = db["job_indeed"]
-    if job_collection.find_one({'title': job_dict['title'], 'company': job_dict['company'], 'location': job_dict['location']}):
-        print('Job already exists')
+    if job_collection.find_one({'jobLink': job_dict['jobLink'], }):
+        job  = job_collection.find_one({'jobLink': job_dict['jobLink']})
+        if 'industry' in job_dict['query']:
+            for code in job_dict['query']['industry']:
+                if code not in job['industry']:
+                    job['industry'].append(code)
+        
+        if 'type' not in job and 'type' in job_dict['query']:
+            job['type'] = job_dict['query']['type']
+
+        if 'experience' not in job and 'experience' in job_dict['query']:
+            job['experience'] = job_dict['query']['experience']
+
+        if 'workingMode' not in job and 'workingMode' in job_dict:
+            job['workingMode'] = job_dict['workingMode']
+        
+        if 'description' in job and len(job['description']) == 0 or 'description' not in job:
+            job['description'] = job_dict['description']
+
+        if 'companyImageUrl' in job and len(job['companyImageUrl']) == 0 or 'companyImageUrl' not in job:
+            job['companyImageUrl'] = job_dict['companyImageUrl']
+
+        if 'companyLink' in job and len(job['companyLink']) == 0 or 'companyLink' not in job:
+            job['companyLink'] = job_dict['companyLink']
+        job_collection.update_one({'jobLink': job_dict['jobLink'], 'company': job_dict['company'], 'title': job_dict['title']}, {'$set': job})
     else:
         job_collection.insert_one({
                 'title': job_dict['title'],
                 'company': job_dict['company'],
                 'location': job_dict['location'],
-                'link': job_dict['link'],
-                'job_description': job_dict.get('job_description', ""),
+                'jobLink': job_dict['jobLink'],
+                'description': job_dict.get('description', ""),
                 'type': job_dict['query'].get('type',""),
                 "time": job_dict['query'].get('time',""),
                 "relevance": job_dict['query'].get('relevance',""),
-                "keywords": job_dict['query'].get('keywords',"") })
+                "keywords": job_dict['query'].get('keywords',""),
+                'companyImageUrl' : job_dict.get('companyImageUrl', ""),
+                'companyLink': job_dict.get('companyLink', ""),
+                }
+        )
 
 
 def start_requests():
@@ -156,10 +200,9 @@ def start_scaper(**kwargs):
 
     config = kwargs.get('config')
     queries = kwargs.get('queries')
-    print(queries)
     client = MongoClient(os.getenv('MONGODB_URI'))
     db = client["Grab-Data"]
-    start = 0# Start page
+    start = 100# Start page
     
     start_requests()
         

@@ -30,7 +30,7 @@ def crawler_indeed():
     queries_indeed = [transform_query(q) for q in queries]
     scheduler = TwistedScheduler()
     indeed_scraper.start_scaper(config=config, queries=queries_indeed)
-    scheduler.add_job(indeed_scraper.start_scaper, 'interval', kwargs={'config': config, 'queries': queries_indeed}, seconds=60*60*24)
+    scheduler.add_job(indeed_scraper.start_scaper, 'interval', kwargs={'config': config, 'queries': queries_indeed}, seconds=60*60)
     scheduler.start()
 
 if __name__ == '__main__':

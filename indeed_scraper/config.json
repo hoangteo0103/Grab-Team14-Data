@@ -9,48 +9,6 @@
   },
   "OpenAI_API_KEY": "",
   "OpenAI_Model": "",
-
-  "search_queries": [
-    {
-      "keywords": "",
-      "location": "Vietnam",
-      "relevance": "RR",
-      "industry": ["41"]
-    },
-    { "keywords": "", "location": "Vietnam" }
-  ],
-  "desc_words": [
-    "agriculture",
-    "farm",
-    "food safety",
-    "manufacture",
-    "manufacturing",
-    "Bilingual",
-    "chemistry",
-    "FDA",
-    "ICH Guideline",
-    "21 CFR 210",
-    "biological sciences",
-    "clinical research",
-    "clinical trials",
-    "drug safety",
-    "ISO 9001",
-    "ISO9001",
-    "Life Sciences",
-    "Biotech",
-    "safety standards",
-    "gt.school",
-    "degree in accounting",
-    "degree in Finance",
-    "ISQM",
-    "ISQM1",
-    "QA/QC",
-    "Electrical Engineering",
-    "IS09001"
-  ],
-  "title_exclude": ["frontend", "fron end", "game"],
-  "title_include": ["python", "developer", "backend", "BE", "engineer"],
-  "company_exclude": ["ClickJobs.io"],
   "languages": ["en"],
-  "num_pages": 1000
+  "num_pages": 100
 }
