@@ -11,12 +11,16 @@ def scan_pdf(url):
 
 def extract_skill_by_cv(cv_url, chat):
     content = scan_pdf(cv_url)
-    response = chat.send_message(f"Give me skill keywords from given resume content: ```{content}```")
-    fc = response.candidates[0].content.parts[0].function_call
-    skills = type(fc).to_dict(fc)["args"]
-    skills_dict = {'skills': []}
-    for skill in skills:
-         skills_dict['skills'].extend(skills[skill])
+    try:
+        response = chat.send_message(f"Give me skill keywords from given resume content: ```{content}```")
+        fc = response.candidates[0].content.parts[0].function_call
+        skills = type(fc).to_dict(fc)["args"]
+        skills_dict = {'skills': []}
+        for skill in skills:
+            skills_dict['skills'].extend(skills[skill])
 
-    return skills_dict
+        return skills_dict
+    except Exception as e:
+        print(f"Error sending message: {e}")
+        return {'skills': []}
 

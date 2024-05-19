@@ -83,14 +83,18 @@ def process_job(job_dict):
                             )
     chat = model.start_chat()
 
-    response = chat.send_message(f"Give me the industries, and requirements corresponding with the given JD: ```{job_desc}```")
-    fc = response.candidates[0].content.parts[0].function_call
-    info_dict = type(fc).to_dict(fc)["args"]
+    try:
+        response = chat.send_message(f"Give me the industries, and requirements corresponding with the given JD: ```{job_desc}```")
+        fc = response.candidates[0].content.parts[0].function_call
+        info_dict = type(fc).to_dict(fc)["args"]
 
-    # update job dict
-    # job_dict["responsibilities"] = info_dict["responsibilities"]
-    job_dict["requirements"] = info_dict["requirements"]
-    job_dict["industries"] = info_dict["industries"]
+        # update job dict
+        # job_dict["responsibilities"] = info_dict["responsibilities"]
+        job_dict["requirements"] = info_dict["requirements"]
+        job_dict["industries"] = info_dict["industries"]
+    except Exception as e:
+        print(f"Error sending message: {e}")
+        
 
 
 
