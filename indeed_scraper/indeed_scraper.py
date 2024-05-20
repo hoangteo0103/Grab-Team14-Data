@@ -8,7 +8,7 @@ import os
 from urllib.parse import urlparse, urlencode
 from dotenv import load_dotenv
 from logger import debug
-from preprocess_data import process_job
+from preprocess_data.updatedb_gemini import process_job
 
 def job_data_get(s, url: str) -> tuple:
     # return the elements for each job card
@@ -118,6 +118,7 @@ def build_search_url(query):
 
 def add_job_to_db(job_dict):
     job_collection = db["job_indeed"]
+    print(job_dict)
     if job_collection.find_one({'jobLink': job_dict['jobLink'], }):
         job  = job_collection.find_one({'jobLink': job_dict['jobLink']})
         if 'industry' in job_dict['query']:
@@ -175,8 +176,10 @@ def start_requests():
                 if br:
                     break
                 url = build_search_url(query)
+                print(url)
                 while True:
                     jobs = job_data_get(s, url)
+                    print(jobs)
                     if len(jobs[1]) == 0:
                         br = True
                         break
@@ -199,13 +202,14 @@ def start_requests():
 
 def start_scaper(**kwargs):
     load_dotenv()
+    print("TFF")
     global db, config, start, queries
 
     config = kwargs.get('config')
     queries = kwargs.get('queries')
     client = MongoClient(os.getenv('MONGODB_URI'))
     db = client["Grab-Data"]
-    start = 100# Start page
+    start = 0# Start page
     
     start_requests()
         

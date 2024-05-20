@@ -5,7 +5,6 @@ from apscheduler.schedulers.twisted import TwistedScheduler
 import indeed_scraper
 from setup import setup
 from dotenv import load_dotenv
-from ..preprocess_data import process_job
 
 load_dotenv()
 
@@ -28,6 +27,7 @@ def transform_query(query):
 
 def crawler_indeed():
     queries_indeed = [transform_query(q) for q in queries]
+    print(queries_indeed)
     scheduler = TwistedScheduler()
     indeed_scraper.start_scaper(config=config, queries=queries_indeed)
     scheduler.add_job(indeed_scraper.start_scaper, 'interval', kwargs={'config': config, 'queries': queries_indeed}, seconds=60*60)
