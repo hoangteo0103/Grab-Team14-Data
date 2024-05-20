@@ -12,7 +12,7 @@ def scan_pdf(url):
 def extract_skill_by_cv(cv_url, chat):
     content = scan_pdf(cv_url)
     try:
-        response = chat.send_message(f"Give me skill keywords from given resume content: ```{content}```")
+        response = chat.send_message(f"Give me skill keywords from given resume content: ```{content}```. The answer must be in English.")
         fc = response.candidates[0].content.parts[0].function_call
         skills = type(fc).to_dict(fc)["args"]
         skills_dict = {'skills': []}

@@ -35,7 +35,7 @@ def process_job(job_dict):
                     "type": "array",
                     "description": "A list of relevent industries",
                     "items": {
-                        "description": "job industry",
+                        "description": "name of job industry in {ACCOMMODATION_SERVICES, ADMINISTRATIVE_AND_SUPPOR_SERVICES, CONSTRUCTION, CONSUMER_SERVICES, EDUCATION, ENTERTAINMENT_PROVIDERS, FARMING_RANCHING_FORESTRY, FINANCIAL_SERVICES, GOVERNMENT_ADMINISTRATION, HOSPITALS_AND_HEALTH_CARE, MANUFACTURING, PROFESSIONAL_SERVICES, REAL_ESTATE_AND_EQUIPMENT_RENTAL_SERVICES, RETAIL, TECHNOLOGY_INFORMATION_AND_MEDIA}",
                         "type": "string",
                     },
                 },
@@ -43,7 +43,7 @@ def process_job(job_dict):
                     "type": "array",
                     "description": "A list of position requirements",
                     "items": {
-                        "description": "job requirement",
+                        "description": "job requirement in English",
                         "type": "string",
                     },
                 },
@@ -84,7 +84,7 @@ def process_job(job_dict):
     chat = model.start_chat()
 
     try:
-        response = chat.send_message(f"Give me the industries, and requirements corresponding with the given JD: ```{job_desc}```")
+        response = chat.send_message(f"Give me the industries, and requirements corresponding with the given JD: ```{job_desc}```.  The industries must belong to the industry group: [ACCOMMODATION_SERVICES, ADMINISTRATIVE_AND_SUPPOR_SERVICES, CONSTRUCTION, CONSUMER_SERVICES, EDUCATION, ENTERTAINMENT_PROVIDERS, FARMING_RANCHING_FORESTRY, FINANCIAL_SERVICES, GOVERNMENT_ADMINISTRATION, HOSPITALS_AND_HEALTH_CARE, MANUFACTURING, PROFESSIONAL_SERVICES, REAL_ESTATE_AND_EQUIPMENT_RENTAL_SERVICES, RETAIL, TECHNOLOGY_INFORMATION_AND_MEDIA]. The answer must be in English.")
         fc = response.candidates[0].content.parts[0].function_call
         info_dict = type(fc).to_dict(fc)["args"]
 
@@ -111,7 +111,7 @@ def process_cv(cv_url):
                 "type": "array",
                 "description": "A list of technical skills",
                 "items": {
-                    "description": "technical skill keyword",
+                    "description": "technical skill keyword in English",
                     "type": "string",
                 },
             },
@@ -119,7 +119,7 @@ def process_cv(cv_url):
                 "type": "array",
                 "description": "A list of soft skills",
                 "items": {
-                    "description": "soft skill keyword",
+                    "description": "soft skill keyword in English",
                     "type": "string",
                 },
             },
@@ -127,7 +127,7 @@ def process_cv(cv_url):
                 "type": "array",
                 "description": "A list of additional skills",
                 "items": {
-                    "description": "additional skill keyword",
+                    "description": "additional skill keyword in English",
                     "type": "string",
                 },
             },
