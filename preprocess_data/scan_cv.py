@@ -11,8 +11,9 @@ def scan_pdf(url):
 
 def extract_info_by_cv(cv_url, chat):
     content = scan_pdf(cv_url)
+    content = content.replace('\"', '\'')
     try:
-        response = chat.send_message(f"Give me skill keywords from given resume content: ```{content}```. The answer must be in English.")
+        response = chat.send_message(f"You are doing keywords extracting task to preprocess data. Give me the skill keywords and information of job applicant from given resume content: ```{content}```. The answer must be in English.")
         fc = response.candidates[0].content.parts[0].function_call
         info = type(fc).to_dict(fc)["args"]
         info_dict = {'skills': []}
