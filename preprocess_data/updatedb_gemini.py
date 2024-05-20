@@ -100,7 +100,8 @@ def process_job(job_dict):
         job_dict["industries"] = list(set(job_dict["industries"]))
     except Exception as e:
         print(f"Error sending message: {e}")
-        
+    
+    return job_dict
 
 
 

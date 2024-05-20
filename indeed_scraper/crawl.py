@@ -1,11 +1,11 @@
 import argparse
-from scrapy.crawler import CrawlerProcess
-from scrapy.settings import Settings
+
 
 from apscheduler.schedulers.twisted import TwistedScheduler
 import indeed_scraper
 from setup import setup
 from dotenv import load_dotenv
+from ..preprocess_data import process_job
 
 load_dotenv()
 

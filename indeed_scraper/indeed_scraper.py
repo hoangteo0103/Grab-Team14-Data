@@ -8,8 +8,7 @@ import os
 from urllib.parse import urlparse, urlencode
 from dotenv import load_dotenv
 from logger import debug
-from ..preprocess_data import updatedb_gemini
-
+from preprocess_data import process_job
 
 def job_data_get(s, url: str) -> tuple:
     # return the elements for each job card
@@ -145,6 +144,9 @@ def add_job_to_db(job_dict):
             job['companyLink'] = job_dict['companyLink']
         job_collection.update_one({'jobLink': job_dict['jobLink'], 'company': job_dict['company'], 'title': job_dict['title']}, {'$set': job})
     else:
+        job_dict = process_job(job_dict)
+        print(job_dict)
+        return 
         job_collection.insert_one({
                 'title': job_dict['title'],
                 'company': job_dict['company'],
@@ -153,10 +155,11 @@ def add_job_to_db(job_dict):
                 'description': job_dict.get('description', ""),
                 'type': job_dict['query'].get('type',""),
                 "time": job_dict['query'].get('time',""),
-                "relevance": job_dict['query'].get('relevance',""),
-                "keywords": job_dict['query'].get('keywords',""),
                 'companyImageUrl' : job_dict.get('companyImageUrl', ""),
                 'companyLink': job_dict.get('companyLink', ""),
+                'platform': 'Indeed',
+                'requirements': job_dict.get('requirements', ""),
+                'industry': job_dict.get('industry', ""),
                 }
         )
 
