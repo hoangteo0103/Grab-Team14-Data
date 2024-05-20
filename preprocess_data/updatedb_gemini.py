@@ -24,6 +24,11 @@ def process_job(job_dict):
     load_dotenv()
     vertexai.init(project=os.getenv('PROJECT_ID'), location=os.getenv('LOCATION'))
     job_desc = job_dict.get('description', "")
+    if job_desc == "":
+        print("Job description is empty")
+        return
+    
+    job_desc = job_desc.replace("\"", "\'")
 
     extract_job_keywords_func = FunctionDeclaration(
         name="extract_job_keywords",
@@ -91,7 +96,8 @@ def process_job(job_dict):
         # update job dict
         # job_dict["responsibilities"] = info_dict["responsibilities"]
         job_dict["requirements"] = info_dict["requirements"]
-        job_dict["industries"] = info_dict["industries"]
+        job_dict["industries"].extend(info_dict["industries"])
+        job_dict["industries"] = list(set(job_dict["industries"]))
     except Exception as e:
         print(f"Error sending message: {e}")
         
@@ -101,9 +107,9 @@ def process_job(job_dict):
 
 def process_cv(cv_url):
 
-    extract_skill_keywords_func = FunctionDeclaration(
-    name="extract_skill_keywords",
-    description="Extract skill keywords from a given resume.",
+    extract_information_func = FunctionDeclaration(
+    name="extract_information",
+    description="Extract skill keywords, and job applicant information from a given resume.",
     parameters={
         "type": "object",
         "properties": {
@@ -131,14 +137,32 @@ def process_cv(cv_url):
                     "type": "string",
                 },
             },
+            "personal_information": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description": "name of job applicant in English",
+                        "type": "string",
+                    },
+                    "phone_number": {
+                        "description": "phone number of job applicant in English",
+                        "type": "string",
+                    },
+                    "email": {
+                        "description": "email of job applicant in English",
+                        "type": "string",
+                    },
+                },
+                "required": ["name", "phone_number", "email"],
+            },
         },
-        "required": ["technical_skills", "soft_skills", "additional_skills"],
+        "required": ["technical_skills", "soft_skills", "additional_skills", "personal_information"],
     },
     )
 
     # Define a tool that includes the above functions
     resume_tool = Tool(
-        function_declarations=[extract_skill_keywords_func],
+        function_declarations=[extract_information_func],
     )
 
     # Define a tool config for the above functions
@@ -148,7 +172,7 @@ def process_cv(cv_url):
             mode=ToolConfig.FunctionCallingConfig.Mode.ANY,
             # List of functions that can be returned when the mode is ANY.
             # If the list is empty, any declared function can be returned.
-            allowed_function_names=["extract_skill_keywords"],
+            allowed_function_names=["extract_information"],
         )
     )
 
@@ -159,7 +183,7 @@ def process_cv(cv_url):
                             )
     chat = model.start_chat()
 
-    skills_dict = scan_cv.extract_skill_by_cv(cv_url, chat)
+    info_dict = scan_cv.extract_info_by_cv(cv_url, chat)
 
-    return skills_dict
+    return info_dict
 

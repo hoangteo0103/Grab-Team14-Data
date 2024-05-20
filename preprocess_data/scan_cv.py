@@ -9,18 +9,20 @@ def scan_pdf(url):
     return content
 
 
-def extract_skill_by_cv(cv_url, chat):
+def extract_info_by_cv(cv_url, chat):
     content = scan_pdf(cv_url)
     try:
         response = chat.send_message(f"Give me skill keywords from given resume content: ```{content}```. The answer must be in English.")
         fc = response.candidates[0].content.parts[0].function_call
-        skills = type(fc).to_dict(fc)["args"]
-        skills_dict = {'skills': []}
-        for skill in skills:
-            skills_dict['skills'].extend(skills[skill])
+        info = type(fc).to_dict(fc)["args"]
+        info_dict = {'skills': []}
+        for skill in ['technical_skills', 'soft_skills', 'additional_skills']:
+            info_dict['skills'].extend(info[skill])
 
-        return skills_dict
+        info_dict['personal_information'] = info['personal_information']
+
+        return info_dict
     except Exception as e:
         print(f"Error sending message: {e}")
-        return {'skills': []}
+        return {'skills': [], 'personal_information': {}}
 
